@@ -73,10 +73,12 @@
   <noscript>
     <img height="1" width="1" style="display:none"
       src="https://www.facebook.com/tr?id=937881331918204&ev=PageView&noscript=1" alt="">
+    <img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=910186264943968&ev=PageView&noscript=1" alt="">
   </noscript>
 
   <script>
-    const PIXEL_ID = "937881331918204";
+    const PIXEL_IDS = ["937881331918204", "910186264943968"];
     const TELEGRAM_BOT = "anajulbot";
     const CAPTURE_URL = "https://n8n.lindai.com.br/webhook/meta-click-anajulia";
     const REDIRECT_DELAY_MS = 2500;
@@ -146,9 +148,9 @@
     (function boot() {
       const leadRef = randomLeadRef();
 
-      fbq("init", PIXEL_ID);
-      fbq("track", "PageView");
-      fbq("track", "Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
+      initPixels();
+      trackAllPixels("PageView");
+      trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
 
       sendCapture(leadRef);
       setTimeout(function() {
@@ -158,3 +160,19 @@
   </script>
 </body>
 </html>
+    function initPixels() {
+      for (const pixelId of PIXEL_IDS) {
+        if (pixelId) fbq("init", pixelId);
+      }
+    }
+
+    function trackAllPixels(eventName, params, options) {
+      for (const pixelId of PIXEL_IDS) {
+        if (!pixelId) continue;
+        if (options) {
+          fbq("trackSingle", pixelId, eventName, params || {}, options);
+        } else {
+          fbq("trackSingle", pixelId, eventName, params || {});
+        }
+      }
+    }
