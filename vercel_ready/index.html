@@ -145,21 +145,6 @@
       window.location.replace(url);
     }
 
-    (function boot() {
-      const leadRef = randomLeadRef();
-
-      initPixels();
-      trackAllPixels("PageView");
-      trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
-
-      sendCapture(leadRef);
-      setTimeout(function() {
-        redirectTelegram(leadRef);
-      }, REDIRECT_DELAY_MS);
-    })();
-  </script>
-</body>
-</html>
     function initPixels() {
       for (const pixelId of PIXEL_IDS) {
         if (pixelId) fbq("init", pixelId);
@@ -176,3 +161,19 @@
         }
       }
     }
+
+    (function boot() {
+      const leadRef = randomLeadRef();
+
+      initPixels();
+      trackAllPixels("PageView");
+      trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
+
+      sendCapture(leadRef);
+      setTimeout(function() {
+        redirectTelegram(leadRef);
+      }, REDIRECT_DELAY_MS);
+    })();
+  </script>
+</body>
+</html>
