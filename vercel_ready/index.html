@@ -82,6 +82,9 @@
     const TELEGRAM_BOT = "anajulbot";
     const CAPTURE_URL = "https://n8n.lindai.com.br/webhook/meta-click-anajulia";
     const REDIRECT_DELAY_MS = 2500;
+    const COOKIE_MAX_AGE_DAYS = 90;
+    const CAPTURE_FALLBACK_DELAY_MS = 120;
+    const CAPTURE_IMG_TIMEOUT_MS = 700;
 
     const SAFE_KEYS = [
       "utm_source",
@@ -99,11 +102,28 @@
       return m ? decodeURIComponent(m[1]) : "";
     }
 
+    function writeCookie(name, value, days) {
+      if (!name || !value) return;
+      const maxAge = Math.max(0, Math.floor(days * 24 * 60 * 60));
+      document.cookie =
+        name +
+        "=" +
+        encodeURIComponent(value) +
+        "; Max-Age=" +
+        maxAge +
+        "; Path=/; SameSite=Lax";
+    }
+
     function randomLeadRef() {
       const seed = Math.floor(Date.now() / 1000).toString(36);
-      const arr = new Uint8Array(8);
-      crypto.getRandomValues(arr);
-      const rand = Array.from(arr, (v) => v.toString(16).padStart(2, "0")).join("");
+      let rand = "";
+      try {
+        const arr = new Uint8Array(8);
+        crypto.getRandomValues(arr);
+        rand = Array.from(arr, function(v) { return v.toString(16).padStart(2, "0"); }).join("");
+      } catch (e) {
+        rand = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+      }
       return ("l" + seed + rand).slice(0, 40);
     }
 
@@ -112,9 +132,45 @@
       return "fb.1." + Date.now() + "." + fbclid;
     }
 
+    function buildFbp() {
+      return "fb.1." + Date.now() + "." + Math.floor(Math.random() * 10000000000);
+    }
+
     function getParam(name) {
       const v = new URLSearchParams(window.location.search).get(name);
       return v ? v.trim() : "";
+    }
+
+    function sendCaptureFetch(url) {
+      if (!window.fetch) return;
+      try {
+        fetch(url, {
+          method: "GET",
+          mode: "no-cors",
+          cache: "no-store",
+          keepalive: true,
+          credentials: "omit"
+        }).catch(function() {});
+      } catch (e) {}
+    }
+
+    function sendCaptureImage(url) {
+      return new Promise(function(resolve) {
+        const img = new Image();
+        let done = false;
+
+        function finish(ok) {
+          if (done) return;
+          done = true;
+          resolve(ok);
+        }
+
+        img.referrerPolicy = "strict-origin-when-cross-origin";
+        img.onload = function() { finish(true); };
+        img.onerror = function() { finish(false); };
+        setTimeout(function() { finish(false); }, CAPTURE_IMG_TIMEOUT_MS);
+        img.src = url;
+      });
     }
 
     function sendCapture(leadRef) {
@@ -127,17 +183,30 @@
         if (value) params.set(key, value);
       }
 
-      const fbp = readCookie("_fbp");
+      let fbp = readCookie("_fbp");
       const fbcCookie = readCookie("_fbc");
       const fbclid = params.get("fbclid") || "";
-      const fbc = fbcCookie || buildFbc(fbclid);
+      let fbc = fbcCookie;
+
+      if (!fbp) {
+        fbp = buildFbp();
+        writeCookie("_fbp", fbp, COOKIE_MAX_AGE_DAYS);
+      }
+      if (!fbc && fbclid) {
+        fbc = buildFbc(fbclid);
+      }
+      if (fbc && !fbcCookie) {
+        writeCookie("_fbc", fbc, COOKIE_MAX_AGE_DAYS);
+      }
 
       if (fbp) params.set("fbp", fbp);
       if (fbc) params.set("fbc", fbc);
 
-      const beacon = new Image();
-      beacon.referrerPolicy = "strict-origin-when-cross-origin";
-      beacon.src = CAPTURE_URL + "?" + params.toString();
+      const baseUrl = CAPTURE_URL + "?" + params.toString();
+      sendCaptureFetch(baseUrl);
+      setTimeout(function() {
+        sendCaptureImage(baseUrl + "&transport=img");
+      }, CAPTURE_FALLBACK_DELAY_MS);
     }
 
     function redirectTelegram(leadRef) {
@@ -164,15 +233,20 @@
 
     (function boot() {
       const leadRef = randomLeadRef();
+      let redirected = false;
+
+      function safeRedirect() {
+        if (redirected) return;
+        redirected = true;
+        redirectTelegram(leadRef);
+      }
 
       initPixels();
       trackAllPixels("PageView");
       trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
 
       sendCapture(leadRef);
-      setTimeout(function() {
-        redirectTelegram(leadRef);
-      }, REDIRECT_DELAY_MS);
+      setTimeout(safeRedirect, REDIRECT_DELAY_MS);
     })();
   </script>
 </body>
