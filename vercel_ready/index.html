@@ -173,9 +173,10 @@
       });
     }
 
-    function sendCapture(leadRef) {
+    function sendCapture(leadRef, eventId) {
       const params = new URLSearchParams();
       params.set("lead_ref", leadRef);
+      if (eventId) params.set("event_id", eventId);
       params.set("event_source_url", window.location.origin + window.location.pathname);
 
       for (const key of SAFE_KEYS) {
@@ -233,6 +234,7 @@
 
     (function boot() {
       const leadRef = randomLeadRef();
+      const leadEventId = "lead_" + leadRef;
       let redirected = false;
 
       function safeRedirect() {
@@ -243,9 +245,9 @@
 
       initPixels();
       trackAllPixels("PageView");
-      trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: "lead_" + leadRef });
+      trackAllPixels("Lead", { lead_ref: leadRef }, { eventID: leadEventId });
 
-      sendCapture(leadRef);
+      sendCapture(leadRef, leadEventId);
       setTimeout(safeRedirect, REDIRECT_DELAY_MS);
     })();
   </script>
