@@ -7,43 +7,275 @@
   <style>
     :root {
       color-scheme: light;
+      --bg-top: #eef4ff;
+      --bg-bottom: #f7faff;
+      --card: rgba(255, 255, 255, 0.98);
+      --ink: #182436;
+      --muted: #607089;
+      --accent: #1877f2;
+      --accent-soft: #dceaff;
+      --online: #2fb36d;
+      --online-glow: rgba(47, 179, 109, 0.28);
+      --shadow: 0 20px 50px rgba(24, 54, 110, 0.14);
     }
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Verdana, Geneva, Tahoma, sans-serif;
-      background: radial-gradient(circle at 20% 20%, #ffe8f1 0%, #f9fbff 45%, #eef6ff 100%);
-      color: #1a1a1a;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 22px 14px max(24px, env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(36, 123, 255, 0.14) 0%, rgba(238, 244, 255, 0) 42%),
+        radial-gradient(circle at bottom right, rgba(24, 119, 242, 0.1) 0%, rgba(247, 250, 255, 0) 34%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      color: var(--ink);
     }
     .card {
-      width: min(520px, 92vw);
-      padding: 28px 24px;
-      border-radius: 20px;
-      background: #ffffff;
-      box-shadow: 0 12px 34px rgba(20, 35, 70, 0.12);
+      width: min(100%, 380px);
+      margin-top: min(8vh, 44px);
+      padding: 22px 16px 20px;
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
       text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: card-in 480ms ease-out;
     }
-    h1 {
-      margin: 0 0 12px;
-      font-size: 1.25rem;
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top, rgba(220, 234, 255, 0.88), transparent 46%),
+        linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+    .inner {
+      position: relative;
+      z-index: 1;
+    }
+    .avatar-wrap {
+      position: relative;
+      width: 144px;
+      height: 144px;
+      margin: 2px auto 14px;
+    }
+    .avatar-ring {
+      position: absolute;
+      inset: -7px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7bb2ff, #d8e9ff);
+      opacity: 1;
+    }
+    .avatar {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      border: 4px solid rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 34px rgba(24, 54, 110, 0.2);
+      background: linear-gradient(180deg, #dceaff, #bcd5ff);
+    }
+    .avatar-fallback {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #f6f9ff;
+      background: linear-gradient(180deg, #5c9cff, #1877f2);
+      border: 4px solid rgba(255, 255, 255, 0.88);
+      box-shadow: 0 16px 34px rgba(24, 54, 110, 0.2);
+      z-index: 0;
+    }
+    .avatar.is-ready {
+      z-index: 1;
+    }
+    .avatar.is-ready + .avatar-fallback {
+      display: none;
+    }
+    .identity {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .name {
+      margin: 0;
+      font-size: 1.36rem;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(47, 179, 109, 0.1);
+      color: #1d7348;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      animation: status-breathe 1.9s ease-in-out infinite;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--online);
+      box-shadow: 0 0 0 0 var(--online-glow);
+      animation: online-pulse 1.6s infinite;
     }
     p {
       margin: 0;
-      line-height: 1.5;
-      color: #3c3c3c;
+      line-height: 1.42;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .subtitle strong {
+      color: #d7263d;
+      font-weight: 700;
+      font-family: Georgia, "Times New Roman", serif;
+      letter-spacing: -0.01em;
+    }
+    .cta {
+      margin-top: 16px;
+      padding: 13px 16px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #2d8cff, #1877f2);
+      border: 1px solid rgba(24, 119, 242, 0.2);
+      color: #ffffff;
+      font-size: 0.94rem;
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(24, 119, 242, 0.22);
+    }
+    .progress {
+      margin-top: 16px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(24, 119, 242, 0.12);
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 42%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #7fb6ff, #1877f2 72%, #cfe3ff);
+      animation: progress-slide 1.4s ease-in-out infinite;
     }
     .dots {
-      margin-top: 16px;
-      letter-spacing: 4px;
-      font-weight: 700;
-      color: #0b57d0;
-      animation: pulse 1.2s infinite;
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
+    .dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7aaeff;
+      opacity: 0.34;
+      animation: dot-wave 1s infinite ease-in-out;
+    }
+    .dots span:nth-child(2) {
+      animation-delay: 0.16s;
+    }
+    .dots span:nth-child(3) {
+      animation-delay: 0.32s;
+    }
+    @keyframes online-pulse {
+      0% {
+        box-shadow: 0 0 0 0 var(--online-glow);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(47, 179, 109, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(47, 179, 109, 0);
+      }
+    }
+    @keyframes status-breathe {
+      0%, 100% {
+        transform: scale(1);
+        background: rgba(47, 179, 109, 0.1);
+      }
+      50% {
+        transform: scale(1.035);
+        background: rgba(47, 179, 109, 0.16);
+      }
+    }
+    @keyframes progress-slide {
+      0% {
+        transform: translateX(-85%);
+      }
+      100% {
+        transform: translateX(230%);
+      }
+    }
+    @keyframes dot-wave {
+      0%, 100% {
+        opacity: 0.28;
+        transform: translateY(0);
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+    }
+    @keyframes card-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    @media (max-width: 420px) {
+      body {
+        padding: 16px 12px max(22px, env(safe-area-inset-bottom));
+      }
+      .card {
+        width: 100%;
+        margin-top: 18px;
+        padding: 20px 14px 18px;
+        border-radius: 24px;
+      }
+      .avatar-wrap {
+        width: 132px;
+        height: 132px;
+        margin-bottom: 12px;
+      }
+      .cta {
+        font-size: 0.92rem;
+        padding: 13px 14px;
+      }
+      .name {
+        font-size: 1.28rem;
+      }
+      .status {
+        font-size: 0.76rem;
+      }
+      p {
+        font-size: 0.92rem;
+      }
     }
   </style>
 
@@ -65,9 +297,39 @@
 </head>
 <body>
   <div class="card">
-    <h1>Quase la</h1>
-    <p>Estamos te redirecionando para o Telegram agora.</p>
-    <p class="dots">...</p>
+    <div class="inner">
+      <div class="avatar-wrap">
+        <div class="avatar-ring"></div>
+        <img
+          class="avatar"
+          src="./redirect-avatar.png"
+          alt="Foto de perfil da Ana Julia"
+          onload="this.classList.add('is-ready')"
+          onerror="this.remove()"
+        >
+        <div class="avatar-fallback">A</div>
+      </div>
+
+      <div class="identity">
+        <p class="name">Ana Julia</p>
+        <div class="status">
+          <span class="status-dot"></span>
+          <span>disponivel agora</span>
+        </div>
+      </div>
+
+      <p class="subtitle"><strong>te levando para o meu quarto</strong></p>
+
+      <div class="cta">conectando agora</div>
+      <div class="progress" aria-hidden="true">
+        <div class="progress-bar"></div>
+      </div>
+      <div class="dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
   </div>
 
   <noscript>
